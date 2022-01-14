@@ -13,7 +13,7 @@
 - 21-2 인공지능    
   - MNIST with PyTorch
   - 데이터: x_train - 손글씨 / y_train - 숫자 label
-  - 학습 : BackPropagation, 활성화함수, normalization(BN-LN-IN-GN), size(Batch size, group size)
+  - 학습 : BackPropagation, 활성화함수, normalization(BN-LN-IN-GN), size(Batch size, roup size)
 
 
 
