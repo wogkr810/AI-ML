@@ -1,4 +1,7 @@
-# Introduction to Data Analysis
+# **대학교 수업시간에 배운 과목들 中 유의미한 과제들을 모아둔 저장소 입니다!**
+
+---
+## Introduction to Data Analysis
 
 - 20-2 데이터개론    
   - 성적 데이터 분석을 통한 학점 부여(R)
@@ -7,7 +10,7 @@
 
 ---
 
-# Multivariate Data Analysis
+## Multivariate Data Analysis
 
 - 21-1 다변량자료분석    
   - 과제3 : 행렬만들기, 다차원시각화, 가설검정
@@ -21,7 +24,7 @@
 
 ---
 
-# Machine-Learning
+## Machine-Learning
 
 - 21-1 기계학습    
   - 바둑 기력 예측 프로젝트
@@ -31,7 +34,7 @@
 
 ---
 
-# Aritificial-Intelligence
+## Aritificial-Intelligence
 
 - 21-2 인공지능    
   - MNIST with PyTorch
@@ -40,7 +43,7 @@
 
 ---
 
-# Data-Base
+## Data-Base
 
 - 21-2 데이터베이스    
   - 과제1: Crawler, Crawler w/ login
