@@ -7,6 +7,20 @@
 
 ---
 
+# Multivariate Data Analysis
+
+- 21-1 다변량자료분석    
+  - 과제3 : 행렬만들기, 다차원시각화, 가설검정
+  - 과제4 : 다변량데이터 정규성확인
+  - 과제5 : 신뢰구간
+  - 과제6 : MANOVA
+  - 과제7 : PCA
+  - 과제8 : Factor Analysis
+  - 과제9 : Linear Discriminant Analysis
+  - 과제10 : 로지스틱 회귀분석
+
+---
+
 # Machine-Learning
 
 - 21-1 기계학습    
