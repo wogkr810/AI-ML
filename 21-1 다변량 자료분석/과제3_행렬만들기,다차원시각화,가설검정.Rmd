@@ -1,0 +1,198 @@
+---
+title: "다변량자료분석 HW3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### 문제1 : 공분산행렬으로 부터 상관계수 행렬 만들기
+
+ <center> 수식 : Σ=V^-1/2^ρV^-1/2^</center>  
+ 
+
+## 공분산행렬(Σ)
+```{r cars}
+sigma<-matrix(c(4,1,2,1,9,-3,2,-3,25),nrow=3)
+sigma
+```
+## 대각성분행렬(V^-1/2^)
+```{r}
+v_1_2<-diag(3)
+for (i in 1:nrow(v_1_2)){
+  v_1_2[i,i]<-(1/sigma[i,i])^(1/2)
+}
+v_1_2
+```
+## 상관계수행렬(ρ)
+```{r}
+low<-v_1_2%*%sigma%*%v_1_2
+low
+```
+## 참고: cov2cor() 코드로도 가능
+```{r}
+x<-cov2cor(sigma)
+x
+x==low
+```
+
+--> 결과 값 같은 것 확인 가능!
+
+### 문제2 : 평균벡터,공분산행렬, 상관계수행렬 구하기
+
+# 데이터 정의
+```{r}
+x_1<-c(90,80,75,70,65)
+x_2<-c(80,90,80,70,80)
+x<-data.frame(x_1,x_2)
+x
+```
+
+# 평균 벡터
+```{r}
+meanvector<-apply(x,2,mean)
+meanvector
+```
+# 공분산 행렬
+```{r}
+cov(x)
+```
+# 상관계수 행렬
+```{r}
+cor(x)
+```
+
+### 문제3 : Seatbelts 자료 요약 및 시각화, (가설을 세워)해석하기.
+
+# 데이터 정의
+```{r}
+data(Seatbelts)
+Seatbelts<-data.frame(Year=floor(time(Seatbelts)),Month=factor(cycle(Seatbelts),labels=month.abb), Seatbelts)
+Seatbelts<-as.data.frame(Seatbelts)
+```
+
+# 데이터 요약
+
+```{r}
+head(Seatbelts)          #앞에서부터 6개의 행만 먼저 보여줌
+dim(Seatbelts)           #데이터 행 , 열 개수
+str(Seatbelts)           #각 열에 특징을 알려줌
+summary(Seatbelts)       #변수들의 수치적 특성 요약
+```
+ 
+
+# 데이터 구분 (1983년 2월기준)
+
+```{r}
+Seatbelts_1<-Seatbelts[1:169,]
+Seatbelts_2<-Seatbelts[170:192,]
+```
+
+# 시각화
+1.법의 제정여부와 운전자사망수
+```{r}
+plot(Seatbelts[,10]~Seatbelts[,3])
+```
+2.boxplot
+```{r}
+par(mfrow=c(1,2))
+boxplot(Seatbelts_1[,3],ylab="사망자 수")
+boxplot(Seatbelts_2[,3],ylab="사망자 수")
+par(mfrow=c(1,1))  #원상복귀
+```
+
+# 가설설정
+
+H~0~ : 법이 제정되기 전 과 후의 운전자 사망자의 수가 차이가 없다.  
+H~1~ : 법이 제정되기 전 과 후의 운전자 사망자의 수가 차이가 있다.  
+Set 유의수준(α) = 5 %
+
+# 가설검정 (두 집단의 모평균 비교검정)
+
+등분산 검정
+
+```{r}
+var.test(Seatbelts_1[,3],Seatbelts_2[,3])
+```
+p-value > α --> 등분산성 가정 가능!  
+
+## 두 집단의 모평균 비교 검정
+```{r}
+t.test(Seatbelts_1[,3],Seatbelts_2[,3],var.equal=TRUE)
+```
+
+## 결론
+
+유의수준(α) = 5 %  >> p-value = 3.288e-06  
+귀무가설 기각 -> H~1~ 채택  
+->법이 제정되기 전 과 후의 운전자 사망자의 수가 차이가 있다.
+
+### 문제4 : USArrests 자료 별그림,체르노프 얼굴그림 그리고 해석하기
+
+# 별그림
+```{r}
+stars(USArrests,cex=0.5)
+```
+
+눈에 띄는 군집이 형성되지 않음!
+
+# 체르노프 얼굴그림
+```{r}
+library(aplpack)
+faces(USArrests,cex=1.5)
+```
+
+육안으로 봤을때 군집화 할수 있을 정도로 식별됨!  
+빨간얼굴 녹색머리 /갈색머리 노란얼굴 /노란머리 주황얼굴   
+등 직관적으로 3개의 군집 관찰됨
+
+# 시각화 하기 위한 ( 4 -> 3차원 축소)
+```{r}
+cor(USArrests) #상관계수분석
+ppccaa<-prcomp(USArrests,center=T,scale=T)
+summary(ppccaa)
+plot(ppccaa)
+```
+
+시각화 한 것을 참고로 보면 세번째 주성분까지 사용해서 3차원 시각화!
+
+# 3개의 변수로 바꾸기
+```{r}
+newppccaa<-as.matrix(USArrests)%*%ppccaa$rotation
+newppccaa<-newppccaa[,1:3]
+```
+# 군집화 및 군집번호 열 추가
+```{r}
+gunzip<-kmeans(newppccaa,3)
+newppccaa<-as.data.frame(newppccaa)
+gun<-gunzip$cluster
+gun<-as.data.frame(gun)
+npa<-cbind(newppccaa,gun)
+head(npa)
+```
+
+
+# 3차원 시각화
+```{r}
+library(ggplot2)
+library(scatterplot3d)
+shapes<-c(16,17,18)
+shapes<-shapes[as.numeric(npa$gun)]
+colors<-c("#999999", "#E69F00", "#56B4E9")
+colors<-colors[as.numeric(npa$gun)]
+scatterplot3d(npa,xlim=c(-250,0),ylim=c(-70,30),zlim=c(-100,0),angle=100,color=colors,pch=shapes,box=FALSE)
+```
+
+
+
+
+# 질문+공부할 것
+1.scatterplot3d 위에 체르노프 얼굴 못그리나? (이미 군집화 해서 의미가 없을수도)  
+2.scatterplot3d 위에 인덱스 이름 추가 못하나(도시 이름)  
+3.가운데 정렬하면서 글씨 더 키우는법 ? (괄호센터랑 샾샾)  
+4.Seatbelts 데이터 filter 함수 안먹힘(attach가 안됨)   
+
+
+

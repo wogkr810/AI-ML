@@ -1,0 +1,60 @@
+---
+title: "다변량자료분석 HW4"
+date: 2021-04-04
+author: ‘수학과 201521139 이재학’
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+<br/>
+
+#### *USairpollution data를 이용하여 Multivariate QQ plot을 그려 정규성 확인하기*
+<br/>
+
+##### **데이터 불러오기**
+<br/>
+
+```{r}
+library(HSAUR2)
+data(USairpollution)
+```
+<br/> 
+  
+##### **1.전체 도시를 포함하여 그릴 것**
+<br/> 
+
+```{r}
+x<-USairpollution
+cm<-colMeans(x)
+S<-cov(x)
+md<-function(x){
+  t(x-cm) %*% solve(S) %*% (x-cm)
+}
+d<-apply(x,1,md)
+qc<-qchisq((1:nrow(x)-1/2)/nrow(x),df=7)
+sd<-sort(d)
+plot(qc,sd,xlab=expression(paste(chi[7]^2," Quantile")),ylab="Ordered distances",xlim=range(qc)*c(1,1.1))
+oups<-which(rank(abs(qc-sd),ties="random")>nrow(x)-3)
+text(qc[oups],sd[oups]-1.5,names(oups),abline(a=0,b=1))
+```
+
+##### **2. Outlier 제외하고 그릴 것**
+<br/>
+```{r}
+k<-c(7,31,33)
+y<-USairpollution[-k,]
+y_cm<-colMeans(y)
+y_S<-cov(y)
+y_md<-function(y){
+  t(y-y_cm) %*% solve(y_S) %*% (y-y_cm)
+}
+y_d<-apply(y,1,y_md)
+y_qc<-qchisq((1:nrow(y)-1/2)/nrow(y),df=7)
+y_sd<-sort(y_d)
+plot(y_qc,y_sd,xlab=expression(paste(chi[7]^2," Quantile")),ylab="Ordered distances",xlim=range(y_qc)*c(1,1.1))
+abline(a=0,b=1)
+```
+
+#### Outlier을 제외하고 본 데이터는 , 전부 포함한 데이터보다 육안으로봐도 더 카이제곱 분포를 따른다고 볼 수 있고, 즉, outlier을 제외한 USairpollution 데이터는 Multivariate normal distribution을 따른다고 볼 수 있다. 

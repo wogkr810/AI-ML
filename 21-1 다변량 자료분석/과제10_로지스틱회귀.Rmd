@@ -1,0 +1,119 @@
+---
+title: "다변량자료분석 HW10"
+date: 2021-06-03
+author: ‘수학과 201521139 이재학’
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+<br/>
+
+##### **데이터,라이브러리 불러오기**
+```{r}
+x<-iris[1:100,c(2,4,5)]               #이진 분류 위해 virginica 없애기, Sepal.Width, Petal Width, Species만 사용
+attach(x)
+set.seed(1)                          #주석달기위해 랜덤시드 고정
+train <- sample(1:nrow(x), 70)       #b번에서 test해야 하므로 70개만 사용
+head(x)
+x_train<-x[train,]
+```
+
+<br/>
+
+##### **(a)Consider the logistic regression model and explain the model.**
+```{r}
+x_glm<-glm(as.factor(Species)~.,data=x_train,family=binomial(link="logit"))
+summary(x_glm)
+```
+
+##### **p-value를 보면 모든 변수가 유의미하게 나왔으나, 계수가 너무 크므로, 단위 조절 필요**
+
+<br/>
+
+
+```{r}
+x_train_reduced<-x
+x_train_reduced$Sepal.Width<-x_train_reduced$Sepal.Width*10
+x_train_reduced$Petal.Width<-x_train_reduced$Petal.Width*10
+```
+```{r}
+x_glm_reduced<-glm(as.factor(Species)~.,data=x_train_reduced[train,],family=binomial(link="logit"))
+summary(x_glm_reduced)
+```
+```{r}
+as.numeric(as.factor(Species))-1
+```
+
+##### **로지스틱 회귀 모델을 통해 요약한 결과를 봤을때, 회귀계수들은 모든 변수가 유의미하게 나왔고,오즈 비를 살펴보면**
+##### **Sepal.Width 변수의 경우 0.1단위만큼 증가할 경우, 오즈비가 exp(-1.833)=0.16배만큼 증가한다.**
+##### **Petal.Width 변수의 경우 0.1단위만큼 증가할 경우, 오즈비가 exp(7.439)=1701배만큼 증가한다.**
+
+<br/>
+
+
+##### **범주형 변수를 더미 변수화를 시키는 as.numeric으로 살펴볼 경우, setosa =0, versicolor=1 임을 살펴 볼 수있다.따라서, 위의 odds비가 증가하는 것은 setosa->versicolor의 경우로 볼 수 있다.**
+
+<br/>
+<br/>
+
+##### **(b)Build the confusion matrices and compute the misclassification rates**
+```{r}
+pre_log<-predict(x_glm_reduced,x_train_reduced[-train,],type='response')
+pre_log
+pre_log_class<-round(pre_log)
+pre_log_class<-ifelse(pre_log_class<0.5,"setosa","versicolor")
+pre_log_table<-table(x_train_reduced[-train,]$Species,pre_log_class)
+pre_log_table<-pre_log_table[-3,]
+pre_log_table
+
+```
+
+
+##### **confusion matrix**
+
+<br/>
+
+##### **misclassification rate**
+
+```{r}
+mis_cl_rate_log<-sum(diag(pre_log_table))/sum(pre_log_table)
+1-mis_cl_rate_log
+```
+
+##### **random seed를 적용함에 따라 index가 다르므로, 개수가 다른 결과가 나오지만, 로지스틱 회귀를 통한 오분류율은 0%로 계산된다.train : test 비율이 7:3 이어서 이러한 결과가 도출됐다 싶어서, train 갯수를 많이 줄여도 오분류율은 적게(0%) 나온다.**
+
+<br/>
+
+##### **(c)Use the result in part(a),classify the new observation x=(3.5,1.75)'**
+```{r}
+new_obs<-data.frame("Sepal.Width"=35,"Petal.Width"=17.5)
+predict(x_glm_reduced,new_obs,type='response')
+round(predict(x_glm_reduced,new_obs,type='response'))
+classify_the_new_observation<-ifelse(round(predict(x_glm_reduced,new_obs,type='response'))<0.5,"setosa","versicolor")
+classify_the_new_observation
+```
+
+##### **predict를 한 모델이 glm_reduced,즉 관측값에 10배씩 곱해서 단위를 바꾼 것이니, 새로운 observation,하나의 test 데이터에 대해 10배 곱한 후 예측하면 값이 1이 나온다. 즉 9-3에서의 레이블과 같은 versicolor이 나온다.**
+
+
+<br/>
+<br/>
+<br/>
+
+### **공부**
+1.새로운 값 예측할 때 바둑 기력예측하는것처럼 test set 도 train set처럼 맞추는게 맞나?
+2.
+   if (pre_log_class[i]==0)
+    pre_log_class[i]="setosa"
+  if (pre_log_class[i]==1)
+    pre_log_class[i]="versicolor"
+
+파이썬이랑 if문 헷갈리지만 ifelse(조건,true,false)가 훨씬 편함
+
+3.데이터가 변했음에도 불구하고 levels가 동일하면 gdata -> drop.levels()
+(DF$letters = DF[drop.levels(DF$letters), ]
+levels(DF$letters))
+
+4.R 라이브러리로 혼동행렬 -> caret 패키지의 confusionMatrix() 함수

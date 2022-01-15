@@ -1,0 +1,124 @@
+---
+title: "다변량자료분석 HW8"
+date: 2021-05-20
+author: ‘수학과 201521139 이재학’
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+<br/>
+
+##### **데이터 불러오기**
+```{r}
+x<-read.table('C:/Users/이재학/Desktop/exams.txt',header=T)
+head(x)
+```
+<br/>
+
+##### **sample correlation matrix**
+```{r}
+p<-cor(x)
+p
+```
+
+<br/>
+
+### **Factor analysis with pricipal component method**
+
+<br/>
+
+##### **변수쌍 시각화**
+```{r}
+library(psych)
+pairs(x)                        
+```
+
+##### **correlation matrix에서 본 것처럼 대부분 높은 상관관계를 보인다.**
+
+<br/>
+
+
+### **choice m(the number of factors)**
+
+<br/>
+
+##### **Eigen value & scree plot& cumulative proportions**
+```{r}
+eigen(p)
+exams_pca<-prcomp(x,scale=T)
+summary(exams_pca)
+screeplot(exams_pca,npcs=5,type="lines")
+abline(v=3,col='red')
+```
+
+##### **1보다 큰 고유값을 선택해야 한다면, m=1**
+##### **scree plot의 elbow 참고 -> m=2**
+##### **cumulative proportions 참고(at least 80%) -> m=3**
+##### **수업시간에 배운 부등식 -> 1.m<5 2.p(p+1)/2>p(m+1) ->m<2 -> m=1**
+##### **문제에서 주어진 두가지 분류(closed,open) ->m=2**
+
+<br/>
+
+### **최종적으로 , choice m=2!**
+
+<br/>
+
+##### **Factor analysis with PC method & visualizaion**
+```{r}
+exams_fa_cor_pc<-principal(x,nfactors=2,rotate='none',covar=F,scores=T)
+exams_fa_cor_pc
+plot(exams_fa_cor_pc$scores,main="Factor scores using PC Method")
+```
+
+#### **Factor analysis with maximum likelihood methods(rotation=none)**
+```{r}
+exams_fa_cor_mle<-factanal(x=x,factors=2,rotation="none",method="mle")
+exams_fa_cor_mle
+```
+
+#### **Factor analysis with maximum likelihood methods(rotation=varimax)**
+```{r}
+exams_fa_cor_mle_varimax<-factanal(x=x,factors=2,rotation="varimax",method="mle")
+exams_fa_cor_mle_varimax
+```
+
+##### **rotation=varimax 옵션을 추가했지만, 해석하는데 더 어려워 보인다.**  
+##### **closed book 과 open book의 관점에서 큰 차이를 보이지 못하는 것 같다.**
+
+<br/>
+
+##### **+추가적으로,Goodness_of_fit test(mle)-Set α=0.05%**
+```{r}
+m<-2
+chi_statistics<-(length(x[,1])-1-(2*length(x)+4*m+5)/6)*(log(det((exams_fa_cor_mle$loadings)%*%t(exams_fa_cor_mle$loadings)+diag(exams_fa_cor_mle$uniquenesses)))-log(det(p)))
+freeee<-((length(x)-m)^2-(length(x)+m))/2
+qchisq(0.95,df=freeee)>chi_statistics
+```
+
+##### **결론적으로,기각역에 있지 않으므로 귀무가설을 기각하지 못한다. 즉,우리가 원하는 결과인 귀무가설을 채택한다. 따라서 m=2는 적절하다.**
+
+<br/>
+
+##### **Factor Scores&visualizaion**
+```{r}
+exams_fa_cor_mle_varimax_reg<-factanal(x=x,factors=2,rotation="varimax",method="mle",scores="regression")
+exams_fa_cor_mle_varimax_wls<-factanal(x=x,factors=2,rotation="varimax",method="mle",scores="Bartlett")
+plot(exams_fa_cor_mle_varimax_reg$scores,main="score by regression")
+plot(exams_fa_cor_mle_varimax_wls$scores,main="weighted least squares")
+```
+
+### **참고**
+##### **goddness of fit test 할 필요없음 (factanal하면 충분한지,통계량 및 자유도 및 p-value 나옴)**
+##### **PC method에서도 해석은 어렵지만, 2 components가 충분하다고 나옴**
+##### **varimax로 rotation한게 오히려 더 설명안되는거같은데,강의노트처럼 축 회전했을때 눈에 보이는 결과 나오게 하는 방법 찾기**
+
+```{r}
+cov(exams_fa_cor_mle_varimax_reg$scores)
+cov(exams_fa_cor_mle_varimax_wls$scores)
+cov(exams_fa_cor_pc$scores)
+```
+
+##### **Factor scores 그림그려서 보면,독립적으로 보이지 않음,실제로 확인하니 가정인 common factors are uncorrelated 만족 안하는거 같음.. 왜?**
+

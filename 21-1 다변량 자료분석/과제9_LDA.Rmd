@@ -1,0 +1,144 @@
+---
+title: "다변량자료분석 HW9"
+date: 2021-06-03
+author: ‘수학과 201521139 이재학’
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+<br/>
+
+##### **데이터,라이브러리 불러오기**
+```{r}
+library(MASS)
+library(ggplot2)
+library(biotools)
+x<-iris[,c(2,4,5)]                    #Sepal.Width, Petal.Width , Species 만 사용
+attach(x)
+head(x)
+set.seed(20)                          #주석달기위해 랜덤시드 고정
+train <- sample(1:length(x[,1]), 100) #d번에서 비교해야 하므로 train 전체 안쓰고 100개만
+```
+
+<br/>
+
+##### **(a) Plot the data in the (X2,X4) variable space**
+```{r}
+ggplot(x,aes(Sepal.Width,Petal.Width))+geom_point(aes(colour=Species))+theme_classic()
+```
+
+##### **색깔별로 나누어본 plot을 봤을때, 그래프만 봐도 versicolor 와 virginica의 경계가 애매한 몇개의 점을 제외하고는 명확하게 구분된다.**
+
+<br/>
+
+```{r}
+par(mfrow=c(1,2))
+hist(Sepal.Width)
+hist(Petal.Width)
+```
+
+##### **변수 한개씩 히스토그램을 그려보면, Sepal.Width 변수의 경우 완벽한 정규분포를 보이고, Petal.Width 변수는 낮은 값을 제외하고는 어느정도의 정규분포를 볼 수 있다.**
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm(Sepal.Width,ylab="Sepal.Width")
+qqline(Sepal.Width,col='red')
+qqnorm(Petal.Width,ylab="Petal.Width")
+qqline(Petal.Width,col='blue')
+```
+
+##### **변수 한개씩 qqplot을 통해 살펴보면 히스토그램의 결과와 비슷하게 살펴 볼 수 있다.**
+
+```{r}
+plot(Sepal.Width,Petal.Width)
+```
+
+##### **두 변수를 고려한 산점도를 봤을때는, 위쪽에서 타원형의 형태를 볼 수있지만, 전체적으로 봤을 때는, 정규성을 확인하기 어렵다.**
+
+```{r}
+xx<-x[,-3]
+xcm<-colMeans(xx)
+xxs<-cov(xx)
+xxd<-function(x){
+  t(x-xcm) %*% solve(xxs) %*% (x-xcm)
+}
+xxd<-apply(xx,1,xxd)
+xxqc<-qchisq((1:nrow(xx)-1/2)/nrow(xx),df=2)
+xxsd<-sort(xxd)
+plot(xxqc,xxsd,xlab=expression(paste(chi[2]^2," Quantile")),ylab="Ordered distances",xlim=range(xxqc)*c(1,1.1))
+abline(a=0,b=1)
+```
+
+##### **두 변수를 모두 고려한 qqplot을 보면, outlier 두개정도를 제외하고는 정규성을 가정할 수 있다.**
+
+<br/>
+
+### *전체적으로 살펴봣을 때, 어느정도의 정규성을 가정할 수 있다.*
+
+<br/>
+
+##### **(b) Construct the quadratic discriminate scores**
+```{r}
+qda_x<-qda(formula=Species~.,data=x,prior=c(1/3,1/3,1/3),subset=train)
+qda_x
+new_obs<-data.frame("Sepal.Width"=3.5,"Petal.Width"=1.75)
+predict(qda_x,new_obs)
+```
+
+##### **quadratic discriminate로 new observation을 예측한 결과 versicolor로 예측된다.**
+
+<br/>
+
+##### **(c) Construct the linear discriminate scores**
+```{r}
+lda_x<-lda(formula=Species~.,data=x,prior=c(1/3,1/3,1/3),subset=train)
+lda_x
+new_obs<-data.frame("Sepal.Width"=3.5,"Petal.Width"=1.75)
+predict(lda_x,new_obs)
+```
+
+##### **linear discriminate로 new observation을 예측한 결과 versicolor로 예측된다.**
+
+<br/>
+
+##### **(d) Compare the result in parts (b) and (c).Explain which approach you prefer**
+```{r}
+pre_qda<-predict(qda_x,x[-train,])
+pre_lda<-predict(lda_x,x[-train,])
+pre_qda_table<-table(x$Species[-train],pre_qda$class)
+pre_lda_table<-table(x$Species[-train],pre_lda$class)
+pre_qda_table
+pre_lda_table
+```
+
+##### **confusion matrix**
+
+<br/>
+
+##### **misclassification rate**
+
+```{r}
+mis_cl_rate_qda<-sum(diag(pre_qda_table))/sum(pre_qda_table)
+mis_cl_rate_lda<-sum(diag(pre_lda_table))/sum(pre_lda_table)
+1-mis_cl_rate_qda
+1-mis_cl_rate_lda
+```
+
+##### **random seed를 적용함에 따라 다른 결과가 나오지만, qda를 통한 오분류율은 1-0.94=0.06(6%)이고, lda를 통한 오분류율은 1-0.96(4%)이다. 따라서, 위의결과를 참고한다면 오분류율이 낮은 lda를 통해 접근하는 것이 합리적일 것이다.**
+
+
+<br/>
+
+### **ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ**
+### **공부**
+##### **(a)번에서 species포함한 plot을 통해 정규성 확인하는 법?**
+##### **qda ,lda 하는방법에서, 수업시간에 배웠던 등분산성을 가정할 수 있는 여부에 따라 분석해야 함?**
+
+```{r}
+boxM(x[,-3],group=x[,3])
+```
+
+##### **정규성을 어느정도 가정할 수 있으니, box m test를 해보면 ,p-value가 매우작은값->귀무가설 기각함. 즉,같다고 가정할 수 없으니, qda를써야하는데 왜 lda가 더 좋은결과? species에 따라 집단을 구분하는게 잘못된 접근?**
+

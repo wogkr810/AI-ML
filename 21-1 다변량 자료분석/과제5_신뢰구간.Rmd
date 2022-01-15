@@ -1,0 +1,273 @@
+---
+title: "다변량자료분석 HW5"
+date: 2021-04-15
+author: ‘수학과 201521139 이재학’
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### *HW5-1.Inferences about mean vectors*  
+
+##### **데이터 불러오기**
+
+```{r}
+sweat<-read.table("C:/Users/이재학/Desktop/sweat.txt")
+colnames(sweat)<-c("index","sweat rate","sodium content","potassium content")
+sweat
+```
+##### **(a) Determine the axes of the 90% confidence elipsoid for μ and the lengths of theses axes.**
+<br/>
+
+##### **데이터 통계치 구하기**
+```{r}
+x_data<-sweat[,2:4]             # 행 번호를 제외한 변수들
+xbar<-apply(x_data,2,mean)      # 평균벡터
+xvar<-var(x_data)               # 공분산 행렬
+p<-nrow(xvar)                   # p=3
+n<-nrow(x_data)                 # n=20
+```
+<br/>
+
+##### **공분산행렬의 고유값 및 고유 벡터 구하기**
+```{r}
+eigen(xvar)
+eve<-eigen(xvar)$vectors
+eva<-eigen(xvar)$values
+```
+<br/>
+
+##### **1.Determine the axes** 
+```{r}
+axes<-matrix(rep(0,p^2),nrow=p)        # pxp 영행렬 만들기
+for(i in 1:length(eva)){
+  axes[,i]<-sqrt(eva[i])*sqrt((n-1)*p/(n*(n-p))*qf(0.90,3,17))*eve[,i]
+}
+                                       # 반복문을 통해 axes 구하기
+axes
+```
+<br/>
+
+##### **2. Length of these axes**
+```{r}
+axes_length<-rep(0,3)                  # px1 영벡터 만들기
+for(i in 1:length(eva)){
+  axes_length[i]<-sqrt(eva[i])*sqrt((n-1)*p/(n*(n-p))*qf(0.90,3,17))
+}                                      # 반복문을 통해 axes_lenth 구하기
+axes_length
+```
+
+##### **축 요약**
+
+```{r}
+axes_total<-rbind(axes,axes_length)
+colnames(axes_total)<-c("axes1","axes2","axes3")
+axes_total
+```
+
+### **(b) Construct QQ plots**
+<br/>
+
+##### **consturct qq plots respectively**
+<br/>
+```{r}
+qqnorm(x_data[,1],ylab="sweat rate")
+qqline(x_data[,1],col='red')
+qqnorm(x_data[,2],ylab="sodium content")
+qqline(x_data[,2],col='red')
+qqnorm(x_data[,3],ylab="potassium content")
+qqline(x_data[,3],col='red')
+```
+
+##### **consturct the three possible scatter plots for pairs of observations**
+
+```{r}
+plot(x_data[,1],x_data[,2],main='scatter plots for pairs',xlab='sweat rate',ylab='sodium content')
+plot(x_data[,1],x_data[,3],main='scatter plots for pairs',xlab='sweat rate',ylab='potassium content')
+plot(x_data[,2],x_data[,3],main='scatter plots for pairs',xlab='sodium content',ylab='potassium content')
+plot(x_data,main='scatter plots for pairs')
+```
+
+##### QQplot을 그렸을 때, sweat rate의 몇가지 data를 제외하고서는, 정규성을 만족함을 살펴 볼 수 있고, 두개씩 묶어 본 세가지의 scatter plot을 보고나면,  특정 패턴없이 random 하게 분포 돼있음을 확인할 수 있다.
+
+### **(c) Find confidence intervals**
+<br/>
+
+##### **simultaneous 95% T^2^ confidence interval**
+```{r}
+lower_simul<-xbar-sqrt(p*(n-1)/(n-p)*qf(0.95,p,n-p))*sqrt(diag(xvar)/n)
+upper_simul<-xbar+sqrt(p*(n-1)/(n-p)*qf(0.95,p,n-p))*sqrt(diag(xvar)/n)
+CI_simul<-cbind(lower_simul,upper_simul)
+CI_simul<-as.data.frame(CI_simul)
+CI_simul
+```
+##### **Bonferroni intervals**
+<br/>
+```{r}
+lower_bon<-xbar-qt((1-0.05/2/p),n-1)*sqrt(diag(xvar)/n)
+upper_bon<-xbar+qt((1-0.05/2/p),n-1)*sqrt(diag(xvar)/n)
+CI_bon<-cbind(lower_bon,upper_bon)
+CI_bon<-as.data.frame(CI_bon)
+CI_bon
+```
+<br/>
+
+##### compare the two sets of inervals 를 했을때,Bonferroni intervals의 경우 수업시간에 배운것처럼, 조금 더 보수적인 면모를 보여준다. simultaneous intervals보다 더 좁고 더 정확하다는 의미 이기도 하다.
+
+### *HW5-2.Inferences about mean vectors*  
+
+##### **데이터 불러오기**
+```{r}
+turtles<-read.table("C:/Users/이재학/Desktop/turtles.txt",header=T)
+head(turtles)
+```
+##### **(a) Test for equalilty of the two polpulation (male/female) mean vectors using α=0.05**
+##### **성별 별로 데이터 나누기**
+```{r}
+turtles_m<-subset(turtles,gender==1)
+turtles_f<-subset(turtles,gender==2)
+turtles_m<-turtles_m[,2:4]
+turtles_f<-turtles_f[,2:4]
+head(turtles_m)
+head(turtles_f)
+```
+##### **통계치 구하기**
+```{r}
+turtles_m_m<-apply(turtles_m,2,mean)
+turtles_f_m<-apply(turtles_f,2,mean)
+turtles_m_v<-var(turtles_m)
+turtles_f_v<-var(turtles_f)
+turtles_d<-turtles_m_m-turtles_f_m
+n1<-nrow(turtles_m)
+n2<-nrow(turtles_f)
+p<-nrow(turtles_m_v)
+sp<-((n1-1)*turtles_m_v+(n2-1)*turtles_f_v)/(n1+n2-2)
+sp
+```
+##### **테스트**
+```{r}
+t(turtles_d)%*%solve(sp*(1/n1+1/n2))%*%turtles_d<=p*(n1+n2-2)/(n1+n2-p-1)*qf(0.95,p,n1+n2-p-1)
+```
+*따라서,성별로 나눈 거북이의 특성에관한 평균은 α=0.05 하에서 ,통계적으로 유의하게 다르다고 할 수 있다.*
+<br/>
+
+##### **(b) Check model assumptions of common variance and multivariate normality**
+
+<br/>
+
+##### **1.multivariate normality**
+
+<br/>
+
+###### **성별에 따른 변수 한개씩**
+
+```{r}
+par(mfrow=c(1,3))
+hist(turtles_m[,1],main="histogram of maleturtles",xlab=colnames(turtles_m[1]))
+hist(turtles_m[,2],main="histogram of maleturtles",xlab=colnames(turtles_m[2]))
+hist(turtles_m[,3],main="histogram of maleturtles",xlab=colnames(turtles_m[3]))
+```
+```{r}
+par(mfrow=c(1,3))
+hist(turtles_f[,1],main="histogram of femaleturtles",xlab=colnames(turtles_f[1]))
+hist(turtles_f[,2],main="histogram of femaleturtles",xlab=colnames(turtles_f[2]))
+hist(turtles_f[,3],main="histogram of femaleturtles",xlab=colnames(turtles_f[3]))
+```
+
+###### **성별에 따른 변수 쌍**
+
+```{r}
+par(mfrow=c(2,1))
+plot(turtles_m)
+plot(turtles_f)
+```
+
+###### **QQplot-3차원 동시고려**
+
+```{r}
+tm<-turtles_m
+tmcm<-colMeans(tm)
+tms<-cov(tm)
+tmd<-function(x){
+  t(x-tmcm) %*% solve(tms) %*% (x-tmcm)
+}
+tmd<-apply(tm,1,tmd)
+tmqc<-qchisq((1:nrow(tm)-1/2)/nrow(tm),df=3)
+tmsd<-sort(tmd)
+plot(tmqc,tmsd,xlab=expression(paste(chi[3]^2," Quantile")),ylab="Ordered distances",xlim=range(tmqc)*c(1,1.1))
+abline(a=0,b=1)
+```
+
+```{r}
+tf<-turtles_f
+tfcm<-colMeans(tf)
+tfs<-cov(tf)
+tfd<-function(x){
+  t(x-tfcm) %*% solve(tfs) %*% (x-tfcm)
+}
+tfd<-apply(tf,1,tfd)
+tfqc<-qchisq((1:nrow(tf)-1/2)/nrow(tf),df=3)
+tfsd<-sort(tfd)
+plot(tfqc,tfsd,xlab=expression(paste(chi[3]^2," Quantile")),ylab="Ordered distances",xlim=range(tfqc)*c(1,1.1))
+abline(a=0,b=1)
+```
+
+##### **변수하나씩,pair,3차원 동시 고려해서 봐도 어느정도 정규분포를 따른다고 가정할 수 있다.**
+<br/>
+
+##### **2.common variance**
+```{r}
+par(mfrow=c(1,2))
+boxplot(turtles_m)
+boxplot(turtles_f)
+```
+
+###### **육안으로 볼 경우 결론 짓기 어렵다.**
+
+```{r}
+cov(turtles_m)
+cov(turtles_f)
+cor(turtles_m)
+cor(turtles_f)
+```
+<br/>
+
+###### **수치, 스케일링한 수치로 봤을때도 결론 짓기 어렵다.**
+<br/>
+
+
+```{r}
+library(biotools)
+boxM(turtles[,-1],group=turtles[,1])
+```
+정규성을 확인했으므로 ,수업시간에 배운 box m test를 해보면,
+p-value가 매우작은값으로,귀무가설을 기각한다.
+즉,같다고가정할 수없다.
+
+##### **(c) Find simultaneous confidence intervals**
+##### **자유도 v구하기(같다고 가정 할 수 없으니)**
+```{r}
+tt<-t(turtles_d)%*%solve(1/n1*turtles_m_v+1/n2*turtles_f_v)%*%turtles_d   #T^2
+s_t<-1/n1*turtles_m_v+1/n2*turtles_f_v                                    #S_T 행렬렬
+vv<-1/(n1-1)*(t(turtles_d)%*%solve(s_t)%*%(1/n1*turtles_m_v)%*%solve(s_t)%*%(turtles_d)/tt)%*%(t(turtles_d)%*%solve(s_t)%*%(1/n1*turtles_m_v)%*%solve(s_t)%*%(turtles_d)/tt)+1/(n2-1)*(t(turtles_d)%*%solve(s_t)%*%(1/n2*turtles_m_v)%*%solve(s_t)%*%(turtles_d)/tt)%*%(t(turtles_d)%*%solve(s_t)%*%(1/n2*turtles_m_v)%*%solve(s_t)%*%(turtles_d)/tt)  #1/v 구하기 위함
+v<-1/vv                                                                      #자유도 v
+```
+
+```{r}
+simul_lower<-turtles_d-sqrt(p*(n1+n2-2)/(n1+n2-p-1)*qf(0.95,p,v))*sqrt(diag(turtles_m_v)/n1+diag(turtles_f_v)/n2)
+simul_upper<-turtles_d+sqrt(p*(n1+n2-2)/(n1+n2-p-1)*qf(0.95,p,v))*sqrt(diag(turtles_m_v)/n1+diag(turtles_f_v)/n2)
+turtles_CI_simul<-cbind(simul_lower,simul_upper)
+turtles_CI_simul<-as.data.frame(turtles_CI_simul)
+turtles_CI_simul
+```
+##### **(c) Find Bonferroni confidence intervals**
+```{r}
+bon_lower<-turtles_d-abs(qt(0.05/2/p,v))*sqrt(diag(turtles_m_v)/n1+diag(turtles_f_v)/n2)
+bon_upper<-turtles_d+abs(qt(0.05/2/p,v))*sqrt(diag(turtles_m_v)/n1+diag(turtles_f_v)/n2)
+turtles_CI_bon<-cbind(bon_lower,bon_upper)
+turtles_CI_bon<-as.data.frame(turtles_CI_bon)
+turtles_CI_bon
+```
+
+#### **simultaneous와 bonferroni intervals를 비교했을때, bonferroni interval이 보수적임을 다시 한번 확인 할 수 있다.**

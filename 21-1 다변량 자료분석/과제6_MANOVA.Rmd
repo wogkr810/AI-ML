@@ -1,0 +1,181 @@
+---
+title: "다변량자료분석 HW6"
+date: 2021-04-28
+author: ‘수학과 201521139 이재학’
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+<br/>
+
+##### **데이터 불러오기**
+```{r}
+library(HSAUR)
+library(car)
+data(water)
+x<-water
+head(x)
+```
+<br/>
+
+##### **location별로 데이터 나누기**
+```{r}
+x_s<-subset(x,location=="South")
+x_n<-subset(x,location=="North")
+head(x_s)
+head(x_n)
+x_s<-x_s[,3:4]                    #town 지우기
+x_n<-x_n[,3:4]
+```
+<br/>
+
+##### **등분산성 확인하기**
+##### **1.botplot으로 확인**
+```{r}
+par(mfrow=c(1,2))
+boxplot(x_s,ylim=c(0,2000))
+boxplot(x_n,ylim=c(0,2000))
+```
+
+##### **boxplot으로 scale을 동일하게 봤을때 두 변수 모두 차이가 보인다.**
+
+<br/>
+
+##### **2.수치로 확인->공분산행렬,상관행렬** 
+```{r}
+cov(x_s)
+cov(x_n)
+cor(x_s)
+cor(x_n)
+```
+
+##### **수치,스케일링한 수치로 봤을때도 결론 짓기 어렵다.**
+
+<br/>
+
+#### **3.box m test 확인**
+
+<br/>
+
+##### **정규성에 대한 가정이 필요하므로 정규성 먼저 확인**
+
+<br/>
+
+##### **location에 따른 변수 한개씩**
+```{r}
+par(mfrow=c(1,2))
+hist(x_s[,1],main="histogram of location-south",xlab=colnames(x_s[1]))
+hist(x_s[,2],main="histogram of location-south",xlab=colnames(x_s[2]))
+```
+```{r}
+par(mfrow=c(1,2))
+hist(x_n[,1],main="histogram of location-north",xlab=colnames(x_n[1]))
+hist(x_n[,2],main="histogram of location-north",xlab=colnames(x_n[2]))
+```
+
+##### **정규분포의 형태를 띄진 않지만, 표본의 수가 적으므로 단정 지을 수 없다.**
+
+<br/>
+
+##### **location에 따른 변수 쌍**
+
+```{r}
+par(mfrow=c(1,2))
+plot(x_s)
+plot(x_n)
+```
+
+##### **변수 하나씩 본것처럼 마찬가지로, 타원의형태를 띄지 않아 정규성을 살펴볼 수 없지만, 표본의 수가 적으므로 단정 지을 수 없다.**
+
+<br/>
+
+#### **QQplot-2차원 동시고려**
+
+```{r}
+xs<-x_s
+xscm<-colMeans(xs)
+xss<-cov(xs)
+xsd<-function(x){
+  t(x-xscm) %*% solve(xss) %*% (x-xscm)
+}
+xsd<-apply(xs,1,xsd)
+xsqc<-qchisq((1:nrow(xs)-1/2)/nrow(xs),df=2)
+xssd<-sort(xsd)
+plot(xsqc,xssd,xlab=expression(paste(chi[2]^2," Quantile")),ylab="Ordered distances",xlim=range(xsqc)*c(1,1.1))
+abline(a=0,b=1)
+```
+
+```{r}
+xn<-x_n
+xncm<-colMeans(xn)
+xns<-cov(xn)
+xnd<-function(x){
+  t(x-xncm) %*% solve(xns) %*% (x-xncm)
+}
+xnd<-apply(xn,1,xnd)
+xnqc<-qchisq((1:nrow(xn)-1/2)/nrow(xn),df=2)
+xnsd<-sort(xnd)
+plot(xnqc,xnsd,xlab=expression(paste(chi[2]^2," Quantile")),ylab="Ordered distances",xlim=range(xnqc)*c(1,1.1))
+abline(a=0,b=1)
+```
+
+##### **2차원 변수를 고려하여 qqplot을 그려본 경우, outlier 하나씩을 제외하고는 정규분포를 따른다고 가정할 수 있다.따라서, box m test 를 사용하여 common variance를 살펴보자.**
+
+<br/>
+
+#### **box m test**
+```{r}
+library(biotools)
+x<-x[,-2]                       #town 제거
+boxM(x[,-1],group=x[,1])
+```
+
+##### **p-value가 0.12로 유의수준을 10%로 잡아도 기각할 수없다.따라서 등분산을 가정할 수 있다.**
+
+<br/>
+
+##### **MANOVA** 
+```{r}
+attach(x)
+summary(Anova(lm(cbind(mortality,hardness)~location,data=x)))
+```
+##### **MANOVA에서 사용하는 4가지의 통계량을 봤을때 p-value가 상당히 낮은 값을 보인다. 따라서 귀무가설을 기각할 수 있고, location에따른 차이를 통계적으로 확인 할 수 있다.**
+
+<br/>
+
+##### **profile plot**
+```{r}
+lo1=apply(x[x$location=="South",-1],2,mean)
+lo2=apply(x[x$location=="North",-1],2,mean)
+plot(lo1,type="b",pch=1,ylim=c(0,2000),ylab="mean",xlab="variable",axes=F);par(new=T)   #덮어서 그래프 그리기
+plot(lo2,type="b",pch=2,ylim=c(0,2000),ylab="mean",xlab="variable",axes=F);par(new=T)
+legend("topright",c("South","North"),lty=1,pch=c(1,2))
+axis(1,at=1:2,lab=c("mortality","hardness"))
+axis(2,las=3)
+box()
+```
+
+##### **scale의 차이가 큼을 고려하면, 두 변수 모두 차이가 큼을 알 수 있다.**
+
+<br/>
+
+##### **변수 하나씩 ANOVA**
+```{r}
+summary(aov(mortality~factor(location),data=x))
+summary(aov(hardness~factor(location),data=x))
+```
+
+##### **변수 하나씩 봤을때도 p-value가 상당히 낮으므로, 귀무가설을 기각한다.따라서 차이가 통계적으로 유의하게 있다.**
+
+<br/>
+
+##### **pairwise.t.test**
+```{r}
+pairwise.t.test(mortality,location,p.adjust.method="bonferroni")
+pairwise.t.test(hardness,location,p.adjust.method="bonferroni")
+t.test(mortality~location,var.equal=TRUE,data=x)
+t.test(hardness~location,var.equal=TRUE,data=x)
+```
+##### **집단이 두개이므로 한가지의 pair가나오고,등분산을 가정한 t.test와의 결과와도 같음을 확인할 수 있다.두 방법에서 살펴본 p-value가 상당히 작으므로, location 별로 차이가 통계적으로 유의하게 있음을 알 수 있다,**
